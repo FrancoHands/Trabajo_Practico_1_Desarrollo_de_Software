@@ -4,6 +4,7 @@ import java.util.List;
 public abstract class Envio {
     private static final int CANTIDAD_MINIMA = 1;
     private static final int CANTIDAD_MAXIMA = 3;
+    private static final double PESO_MAXIMO = 100;
 
     private final List<Paquete> paquetes = new ArrayList<>();
     private double costo;
@@ -45,29 +46,40 @@ public abstract class Envio {
     public void iniciarEnvio() {
         chequearEnvioValido();
         for (Paquete paquete : paquetes) {
-            paquete.avanzarEstado();
+            paquete.prepararParaEnvio();
+        }
+    }
+
+    public void iniciarDistribucion() {
+        chequearEnvioValido();
+        for (Paquete paquete : paquetes) {
+            paquete.marcarEnDistribucion();
         }
     }
 
     public void finalizarEnvio() {
         chequearEnvioValido();
         for (Paquete paquete : paquetes) {
-            while (!"Entregado".equals(paquete.getEstado())) {
-                paquete.avanzarEstado();
-            }
+            if ("Recibido".equals(paquete.getEstado())) paquete.prepararParaEnvio();
+            if ("En preparación".equals(paquete.getEstado())) paquete.marcarEnDistribucion();
+            if ("En distribución".equals(paquete.getEstado())) paquete.entregar();
         }
     }
 
-    public void calcularCosto(double peso) {
-        chequearPeso(peso);
-        costo = peso * tarifa();
+    public void calcularCosto() {
+        double pesoTotal = 0;
+        for (Paquete paquete : paquetes) {
+            pesoTotal += paquete.getPeso();
+        }
+        chequearPeso(pesoTotal);
+        costo = pesoTotal * tarifa();
     }
 
     protected abstract double tarifa();
 
     private void chequearPeso(double peso) {
-        if (peso <= 0 || peso >= 100) {
-            throw new IllegalArgumentException("El peso debe estar entre 0 y 100.");
+        if (peso <= 0 || peso >= PESO_MAXIMO) {
+            throw new IllegalArgumentException("El peso total debe estar entre 0 y " + PESO_MAXIMO + "kg.");
         }
     }
 
@@ -77,5 +89,3 @@ public abstract class Envio {
         }
     }
 }
-
-
